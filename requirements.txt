@@ -1,0 +1,11 @@
+langchain
+langchain-community
+langgraph
+python-dotenv
+langchain-openai
+pydantic
+pydantic-settings
+fastapi
+uvicorn
+pdfplumber
+python-multipart
