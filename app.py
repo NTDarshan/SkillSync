@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+#define the app
 app = FastAPI(title="Resume Analyzer API", version="1.0.0")
 
 # Add CORS middleware to allow requests from any origin
@@ -21,7 +22,6 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
 )
-
 
 # Model initialization
 model = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
@@ -36,6 +36,7 @@ class ResumeState(BaseModel):
     # Contact Info
     candidate_name: Optional[str] = Field(None, description="Candidate's full name")
     candidate_email: Optional[str] = Field(None, description="Candidate's email address")
+    candidate_phone: Optional[str] = Field(None, description="Candidate's phone number")
     
     # Skills
     resume_skills: List[str] = Field(default_factory=list, description="Skills extracted from resume")
@@ -66,6 +67,9 @@ class ContactInfo(BaseModel):
     """Model for extracting contact information from resume"""
     name: str = Field(description="Candidate's full name")
     email: str = Field(description="Candidate's email address")
+    phone: Optional[str] = Field(None, description="Candidate's phone number")
+    
+    
 
 
 class SkillsList(BaseModel):
@@ -128,6 +132,7 @@ def extract_contact_info(state: ResumeState) -> dict:
 Find:
 - Full name (first name and last name)
 - Email address
+- Phone number
 
 If you cannot find the email, use "not_provided@example.com" as a placeholder.
 
@@ -140,7 +145,8 @@ Extract the contact information:"""
     
     return {
         "candidate_name": result.name,
-        "candidate_email": result.email
+        "candidate_email": result.email,
+        "candidate_phone": result.phone
     }
 
 
@@ -438,7 +444,6 @@ Be kind, constructive, and professional. Use proper email format with subject li
 
 # Define the graph
 graph = StateGraph(ResumeState)
-
 # Add nodes
 graph.add_node("extract_contact_info", extract_contact_info)
 graph.add_node("extract_resume_skills", extract_resume_skills)
@@ -448,7 +453,6 @@ graph.add_node("match_skills", match_skills)
 graph.add_node("calculate_score", calculate_score)
 graph.add_node("generate_detailed_report", generate_detailed_report)
 graph.add_node("generate_email_template", generate_email_template)
-
 # Define the workflow edges
 graph.add_edge(START, "extract_contact_info")
 graph.add_edge("extract_contact_info", "extract_resume_skills")
@@ -500,6 +504,7 @@ class AnalysisResponse(BaseModel):
     """Response model for resume analysis"""
     candidate_name: str
     candidate_email: str
+    candidate_phone: str
     resume_skills: List[str]
     required_skills: List[str]
     matching_skills: List[str]
@@ -562,7 +567,8 @@ async def upload_resume(
             final_score=result_state.final_score,
             final_recommendation=result_state.final_recommendation,
             detailed_report=result_state.detailed_report,
-            email_template=result_state.email_template
+            email_template=result_state.email_template,
+            candidate_phone=result_state.candidate_phone
         )
         
     except HTTPException:
